@@ -1,0 +1,159 @@
+# This script reads phi/psi backbone dihedral angle pairs from the input file (rama.xvg)
+# and creates two Ramachandran plots:
+#  1. a relative probability distribution
+#  2. an approximate free energy surface
+# The script first assigns all sampled phi/psi angle pairs to a two-dimensional
+# histogram. The histogram is then normalized to obtain a relative probability
+# distribution P(phi, psi). From this probability distribution, an approximate
+# free energy surface is calculated using the Boltzmann relation:
+#   F(phi, psi) = -kBT * ln(P(phi, psi))
+
+#! pip install numpy
+#! pip install matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Input file containing angle pairs (phi/psi)
+data_file = 'rama.xvg'
+
+# Here, angles are defined from [-180 to 180[ degrees.
+# You could choose another domain. Points will be automatically
+# wrapped inside that domain. This can be useful for symmetrical
+# side chains, for instance. Be careful to use an appropriate domain,
+# otherwise the wrapping will produce meaningless data.
+x_min, x_max, y_min, y_max = -180.0, 180.0, -180.0, 180.0
+
+# Number of bins in x and y direction
+# x_resolution, y_resolution = 360, 360
+# x_resolution, y_resolution = 180, 180
+x_resolution, y_resolution = 90, 90
+
+
+def read_angles(line):
+
+    # Split line into separate values
+    tokens = line.split()
+
+    # Read the first two columns as phi and psi angles
+    # and convert them from strings to floating-point numbers
+    x = float(tokens[0])
+    y = float(tokens[1])
+
+    # Wrap phi angles below the lower boundary back into
+    # the selected periodic domain (here: -180° to 180°)
+    while x < x_min:
+        x = x_max - (x_min - x)
+
+    # Wrap phi angles at or above the upper boundary
+    # back into the selected periodic domain
+    while x >= x_max:
+        x = x_min + (x - x_max)
+
+    # Apply the same periodic wrapping to the psi angle
+    while y < y_min:
+        y = y_max - (y_min - y)
+
+    while y >= y_max:
+        y = y_min + (y - y_max)
+
+    return [x, y]
+
+
+# Read the input file line by line and process each valid data line.
+# Empty lines and XVG header/comment lines starting with # or @ are ignored.
+points = [
+    read_angles(line)
+    for line in open(data_file)
+    if line.strip() and not line.lstrip().startswith(("#", "@"))
+]
+
+# Total number of sampled points
+count = len(points)
+
+# Create empty 2D histogram
+histogram = np.zeros([x_resolution, y_resolution])
+
+# Calculate bin width in x and y direction
+x_interval_length = (x_max - x_min) / x_resolution
+y_interval_length = (y_max - y_min) / y_resolution
+
+# Assign every point to a histogram bin
+for i in points:
+
+    # Calculate x-bin index
+    ix = int((i[0] - x_min) / x_interval_length)
+
+    # Calculate y-bin index
+    iy = int((i[1] - y_min) / y_interval_length)
+
+    # Increase histogram value in selected bin
+    histogram[ix, iy] += 1
+
+
+# Define relative probability distribution
+P = histogram / histogram.sum()
+
+# Protect against log(0)
+eps = 1e-12
+P_safe = np.maximum(P, eps)
+
+# Calculate free energy from Boltzmann relation
+kBT = 2.479  # kJ/mol at 300 K
+F = -kBT * np.log(P_safe)
+
+# Shift minimum free energy to zero
+F = F - np.nanmin(F)
+
+# Hide empty bins visually in the plot
+F[histogram == 0] = np.nan
+P[histogram == 0] = np.nan
+
+# Generate grid for contour plotting
+values_x = np.linspace(x_min, x_max, x_resolution)
+values_y = np.linspace(y_min, y_max, y_resolution)
+X, Y = np.meshgrid(values_x, values_y)
+
+# print(len(X),len(Y))
+
+# Plot free energy surface
+plt.figure(figsize=(10, 8))
+
+# Filled contour plot of free energy
+plt.contourf(X, Y, F.T, levels=10, cmap="viridis")
+
+# Add color scale
+plt.colorbar(label="free energy (kJ/mol)")
+
+# Axis labels
+plt.xlabel(r"$\phi$")
+plt.ylabel(r"$\psi$")
+
+# Save figure
+plt.savefig("fes.png", dpi=300, bbox_inches="tight")
+
+# Display plot
+plt.show()
+
+
+# Plot relative probability distribution
+plt.figure(figsize=(10, 8))
+
+# Filled contour plot of relative probability
+plt.contourf(X, Y, P.T, levels=10, cmap="viridis")
+
+# Add color scale
+plt.colorbar(label="relative probability")
+
+# Axis labels
+plt.xlabel(r"$\phi$")
+plt.ylabel(r"$\psi$")
+
+# Save figure
+plt.savefig("rel_P.png", dpi=300, bbox_inches="tight")
+
+# Display plot
+plt.show()
+
+# Print maximum histogram density
+print(histogram.max())

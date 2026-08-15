@@ -1,0 +1,18 @@
+# Prism Dispersion – Refractive Index as a Function of Wavelength
+
+import numpy as np
+import matplotlib.pylab as plt
+
+# Measurement data
+x = np.array([643.3, 578.05, 546.1, 508, 480.0, 466.2, 404.7])
+y = np.array([1.618, 1.623, 1.626, 1.630, 1.636, 1.639, 1.646])
+
+# Plot
+plt.scatter(x, y, label="Measurement points")
+plt.plot(x, y, label="Dispersion curve")
+plt.grid(True)
+plt.xlabel("Wavelength")
+plt.ylabel("Refractive index n")
+plt.title("Dispersion curve")
+plt.legend()
+plt.show()

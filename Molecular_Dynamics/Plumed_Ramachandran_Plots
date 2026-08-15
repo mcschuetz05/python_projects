@@ -1,0 +1,69 @@
+# This script reads the free energy surface from the PLUMED output file (fes.dat)
+# and creates a filled contour plot of the free energy as a function of the backbone dihedral angles phi and psi.
+# Note that the free energy values do not need to be calculated in this script
+# since they have already been reconstructed by PLUMED.
+# Therefore this script only reads the precomputed phi, psi, and free energy values
+# and visualizes them.
+
+#! pip install numpy
+#! pip install matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Input file containing angle pairs (phi/psi)
+data_file = 'fes.dat'
+
+
+def read_angles(line):
+
+    # Split line into separate values
+    tokens = line.split()
+
+    # Read phi and psi angles and free energy
+    # and convert them to floating-point numbers
+    x = np.degrees(float(tokens[0]))
+    y = np.degrees(float(tokens[1]))
+    F = float(tokens[2])
+
+    return [x, y, F]
+
+
+# Lists for plotting
+x = []
+y = []
+F = []
+
+# Empty lines and XVG header/comment lines starting with # or @ are ignored.
+for line in open(data_file):
+    if not line.strip() or line.lstrip().startswith(("#", "@")):
+        continue
+
+    values = read_angles(line)
+
+    # Store phi, psi, and free-energy values in separate lists
+    x.append(values[0])
+    y.append(values[1])
+    F.append(values[2])
+
+# Set minimum to zero
+F -= np.min(F)
+
+# Plot free energy surface
+plt.figure(figsize=(10, 8))
+
+# Filled contour plot of free energy
+plt.tricontourf(x, y, F, levels=8, cmap="viridis")
+
+# Add color scale
+plt.colorbar(label="free energy (kJ/mol)")
+
+# Axis labels
+plt.xlabel(r"$\phi$")
+plt.ylabel(r"$\psi$")
+
+# Save figure
+plt.savefig("fes.png", dpi=300, bbox_inches="tight")
+
+# Display plot
+plt.show()

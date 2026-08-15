@@ -1,0 +1,78 @@
+# Semiconductor – Resistance-Temperature Analysis and Linear Fit
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Temperature values in degrees Celsius
+T_C = np.array([25, 35, 45, 55, 65, 75, 85, 95])
+
+# Resistance values measured during heating
+R_heating = np.array([766.76, 541.02, 363.16, 245.19,
+                     161.34, 114.68, 83.79, 66.45])
+
+# Resistance values measured during cooling
+R_cooling = np.array([678.37, 426.21, 363.16, 245.19,
+                     161.34, 114.68, 83.79, 66.45])
+
+# Converting temperature from Celsius to Kelvin
+T_K = T_C + 273.15
+
+# Calculating the reciprocal temperature 1/T
+x = 1 / T_K
+
+# Calculating the natural logarithm of the resistance values
+ln_R_heating = np.log(R_heating)
+ln_R_cooling = np.log(R_cooling)
+
+# Linear fit
+fit_heating = np.polyfit(x, ln_R_heating, 1)
+fit_cooling = np.polyfit(x, ln_R_cooling, 1)
+
+# Extracting the slope b from the heating fit
+b_heating = fit_heating[0]
+
+# Extracting the intercept ln(R0) from the heating fit
+ln_R0_heating = fit_heating[1]
+
+# Extracting the slope b from the cooling fit
+b_cooling = fit_cooling[0]
+
+# Extracting the intercept ln(R0) from the cooling fit
+ln_R0_cooling = fit_cooling[1]
+
+# Converting ln(R0) back to R0
+R0_heating = np.exp(ln_R0_heating)
+R0_cooling = np.exp(ln_R0_cooling)
+
+# Fit parameters for heating
+print("heating")
+print("b =", b_heating)
+print("R0 =", R0_heating)
+print()
+
+# Fit parameters for cooling
+print("cooling")
+print("b =", b_cooling)
+print("R0 =", R0_cooling)
+
+
+# Plot
+plt.figure()
+
+# Plot for heating measurement data
+plt.plot(x, ln_R_heating, "o", label="heating measurement data")
+
+# Plot for linear fit for heating data
+plt.plot(x, np.polyval(fit_heating, x), "-", label="fit for heating data")
+
+# Plot for cooling measurement data
+plt.plot(x, ln_R_cooling, "o", label="cooling measurement data")
+
+# Plot for linear fit for cooling data
+plt.plot(x, np.polyval(fit_cooling, x), "-", label="fit for cooling data")
+
+plt.xlabel("1/T (1/K)")
+plt.ylabel("ln(R)")
+plt.legend()
+plt.grid()
+plt.show()

@@ -1,0 +1,49 @@
+# Reversible Pendulum – Oscillation Period Analysis
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Measurement data
+x = np.array([97.9, 87.0, 72.0, 67.0, 57.0])
+
+# Distance
+Tf = np.array([84.414, 83.522, 82.576, 81.35, 80.328])
+Tm = np.array([85.362, 79.614, 76.460, 81.82, 95.860])
+
+
+# Creating fits
+
+# Linear fit: degree 1
+pf = np.polyfit(x, Tf, 1)
+ff = np.poly1d(pf)
+
+# Polynomial fit: degree 2
+pm = np.polyfit(x, Tm, 2)
+fm = np.poly1d(pm)
+
+# Calculating intersection point
+diff = ff - fm
+x_intersection = np.roots(diff)
+T_intersection = ff(x_intersection)
+
+print("x_intersection =", x_intersection)
+print("T_intersection =", T_intersection)
+
+
+# Plot
+plt.scatter(x, Tf, color="blue", label="Tf")
+plt.scatter(x, Tm, color="red", label="Tm")
+
+x_fit = np.linspace(min(x), max(x), 200)
+
+plt.plot(x_fit, ff(x_fit), label="linear fit Tf")
+plt.plot(x_fit, fm(x_fit), label="polynomial fit Tm")
+
+plt.scatter(x_intersection, T_intersection, label="intersection point")
+
+plt.xlabel("Knife-edge distance")
+plt.ylabel("Oscillation period T [s]")
+plt.title("Reversible pendulum")
+plt.grid(True)
+plt.legend()
+plt.show()
